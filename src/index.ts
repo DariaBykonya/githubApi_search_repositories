@@ -24,14 +24,21 @@ type DebouncedFunction<T extends (...args: any[]) => any> = {
 document.addEventListener('DOMContentLoaded', function() {
   const resultsContainer = document.getElementById('results-container');
   const searchInput = document.getElementById('search-input') as HTMLInputElement;
-
-
   const loader = document.createElement('div');
-  loader.classList.add('loader');
-  resultsContainer.append(loader);
 
-  const showLoader = () => loader.classList.add('visible');
-  const hideLoader = () => loader.classList.remove('visible');
+  function displayLoader (): void {
+    resultsContainer.innerHTML = '';
+
+    loader.classList.add('loader');
+    loader.classList.add('visible');
+    resultsContainer.append(loader);
+  
+    resultsContainer.appendChild(loader);
+  };
+
+  function nonDisplayLoader (): void {
+    loader.classList.remove('visible');
+  };
 
   // Реализация функции debounce
   const debounce = <T extends (...args: any[]) => any>(
@@ -46,9 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   // Функция для выполнения запроса к API GitHub
-  const searchRepositories = async (query: string): Promise<any> => {
-    showLoader();
-    
+  const searchRepositories = async (query: string): Promise<IRepository[]> => {
+    displayLoader();
     try {
       const response = await fetch(`https://api.github.com/search/repositories?q=${query}`);
       if (!response.ok) {
@@ -65,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
       displayNoneQuery(`Request execution error ${error.status}: ${error.message}`);
       return [];
     } finally {
-      hideLoader();
+      nonDisplayLoader();
     }
   };
   
@@ -140,23 +146,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const getRepositoryDetails = async (repo: IRepository): Promise<IRepository> => {
     try {
-      showLoader();
       const response = await fetch(`https://api.github.com/repos/${repo.owner.login}/${repo.name}`);
       if (!response.ok) {
         throw new Error('Ошибка получения данных о репозитории');
       }
-      hideLoader();
+      nonDisplayLoader();
       return await response.json();
     } catch (error) {
       displayNoneQuery('Ошибка получения данных о репозитории');
       throw error;
     } finally {
-      hideLoader();
+      nonDisplayLoader();
     }
   };
 
   const displayRepositoryDetails = async (repository: IRepository): Promise<void> => {
-    showLoader();
     const existingModal = document.querySelector('.modal-container');
     if (existingModal) {
       existingModal.remove();
@@ -196,7 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Error fetching repository details:', error);
       displayNoneQuery('Ошибка получения данных о репозитории');
     } finally {
-      hideLoader();
     }
   }
 });
